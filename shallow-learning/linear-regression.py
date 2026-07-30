@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.15"
+__generated_with = "0.23.14"
 app = marimo.App()
 
 
@@ -71,14 +71,14 @@ def _(mo):
 
 @app.cell
 def _(np):
-    def compute_cost(X, y, theta):
+    def compute_cost(X, y, w):
         """
         Computes the cost function for linear regression.
-        J = (1/2m) * ||Xtheta - y||^2
+        J = (1/2m) * ||Xw - y||^2
         """
         m = X.shape[0]
 
-        J = (1 / (2*m)) * np.sum((X @ theta - y) ** 2)
+        J = (1 / (2*m)) * np.sum((X @ w - y) ** 2)
         return J
 
     def gradient_descent(X, y, lr=0.01, n_iter=1000):
@@ -87,15 +87,15 @@ def _(np):
         """
         m, n = X.shape
 
-        # initalize thetaeights to be 0
-        theta = np.zeros(n)
+        # initalize weights to be 0
+        w = np.zeros(n)
         history = []
 
         for i in range(n_iter):
-            grad = (1/m) * (X.T @ (X @ theta - y))
-            theta -= grad * lr
-            history.append(compute_cost(X, y, theta))    
-        return theta, np.array(history)
+            grad = (1/m) * (X.T @ (X @ w - y))
+            w -= grad * lr
+            history.append(compute_cost(X, y, w))    
+        return w, np.array(history)
 
     return (gradient_descent,)
 
@@ -110,11 +110,11 @@ def _(mo):
 
 @app.cell
 def _(np):
-    def predict(X, theta):
+    def predict(X, w):
         """
-        Computes predictions using thetaeights and data
+        Computes predictions using weights and data
         """
-        yhat = X @ theta
+        yhat = X @ w
 
         return yhat
 
@@ -145,13 +145,13 @@ def _(
     Xb = add_bias(X)
 
     # Normal Equation
-    theta_normal  = normal_equation(Xb, y)
-    yhat_normal = predict(Xb, theta_normal)
+    w_normal  = normal_equation(Xb, y)
+    yhat_normal = predict(Xb, w_normal)
     rmse_normal = rmse(yhat_normal, y)
 
     # Gradient Descent
-    theta_grad, history = gradient_descent(Xb, y, lr=0.1, n_iter=5000)
-    yhat_grad = predict(Xb, theta_grad)
+    w_grad, history = gradient_descent(Xb, y, lr=0.1, n_iter=5000)
+    yhat_grad = predict(Xb, w_grad)
     rmse_grad = rmse(yhat_grad, y)
 
     # Scikit-learn
@@ -168,9 +168,8 @@ def _(
         rmse_grad,
         rmse_normal,
         rmse_sci,
-        theta_grad,
-        theta_normal,
-        theta_sci,
+        w_grad,
+        w_normal,
     )
 
 
@@ -196,23 +195,23 @@ def _(
     rmse_grad,
     rmse_normal,
     rmse_sci,
-    theta_grad,
-    theta_normal,
-    theta_sci,
+    w_grad,
+    w_normal,
+    w_sci,
 ):
     # Intercept
     print("----Intercept----")
-    print(f"Normal Eqn:            {theta_normal[0]:.3f}")
-    print(f"Gradient Descent:      {theta_grad[0]:.3f}")
+    print(f"Normal Eqn:            {w_normal[0]:.3f}")
+    print(f"Gradient Descent:      {w_grad[0]:.3f}")
     print(f"Scikit-learn:          {intercept_sci:.3f}")
     print(f"True Intercept:        {TRUE_BIAS:.3f}")
 
-    # thetaeights
+    # Weights
     print("\n")
-    print("----thetaeights----")
-    print(f"Normal Eqn:            {theta_normal[1:]}")
-    print(f"Gradient Descent:      {theta_grad[1:]}")
-    print(f"Scikit-learn:          {theta_sci}")
+    print("----Weights----")
+    print(f"Normal Eqn:            {w_normal[1:]}")
+    print(f"Gradient Descent:      {w_grad[1:]}")
+    print(f"Scikit-learn:          {w_sci}")
     print(f"True coef:             {coef}")
 
     # RMSE
