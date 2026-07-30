@@ -2,21 +2,12 @@
 
 My machine learning notes. Updating as I find time to document what I learn.
 
-Notebooks are written with [marimo](https://marimo.io) - reactive Python notebooks stored as plain `.py` files.
+Notebooks are written with [marimo]
 
 ## Contents
 
 ```
-ml-notes/
-`-- shallow-learning/
-    |-- linear-regression.py     # Closed form vs. numpy (gradient descent) vs. sklearn for linear regression
-    `-- logistic-regression.py   # numpy (gradient descent) vs. sklearn for logistic regression
-```
-
-## Running the notebooks
-
-```bash
-conda activate ml
-marimo edit shallow-learning/linear-regression.py   # interactive editor
-marimo run  shallow-learning/linear-regression.py   # read-only app view
+shallow-learning/
+├── linear-regression.py     # Closed form & numpy GD implementation
+└── logistic-regression.py   # numpy GD implementation
 ```
