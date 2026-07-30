@@ -1,0 +1,11 @@
+# marimo
+__marimo__/
+
+# Installed agent skills (reinstallable via `npx skills add`)
+.agents/skills/
+.claude/skills/
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
