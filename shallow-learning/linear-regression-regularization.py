@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.15"
+__generated_with = "0.23.14"
 app = marimo.App(width="medium")
 
 
@@ -154,15 +154,15 @@ def _(np):
         """
         m, n = X.shape
         grad = (1/m) * (X.T @ (X @ w - y))
-    
+
         reg_grad = np.zeros(n)
         if reg in ("L2", "ridge", "elastic"):
             reg_grad = (lam2 / m) * w
- 
+
         # drop the intercept. should not be included in regularization
         reg_grad[0] = 0
         grad += reg_grad
-    
+
         return grad
 
     def soft_threshold(w, t):
@@ -171,13 +171,13 @@ def _(np):
         Used for proximal gradient descent (ITSA)
         """
         return np.sign(w) * np.maximum(np.abs(w) - t, 0.0)
-    
+
     def gradient_descent(X, y, lr=0.1, lam1=0.0, lam2=0.0, reg=None, n_iter=1000):
         """Performs gradient descent for linear, lasso, ridge and elastic net regression.
         For lasso and elastic net proximal gradient descent is performed
         """
         m, n = X.shape
-    
+
         w = np.zeros(n) # initalize weights to 0
         history = []
 
@@ -188,7 +188,7 @@ def _(np):
             # Proximal Gradient Descent (ITSA)
             if reg in ("L1", "lasso", "elastic"):
                 w[1:] = soft_threshold(w[1:], lr * lam1 /m)
-            
+
             history.append(compute_cost(X, y, w, lam1=lam1, lam2=lam2, reg=reg))
 
         return w, history
@@ -214,7 +214,7 @@ def _(np):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Comparison
+    ## Comparison with Sklearn
     """)
     return
 
@@ -258,7 +258,7 @@ def _(PolynomialFeatures, StandardScaler, np, plt):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Comparison with Sklearn
+    ### Model Fitting
     """)
     return
 
@@ -282,7 +282,7 @@ def _(
     m = X.shape[0]
 
     gd_params = {
-        "None":    dict(lam1=0.0,              lam2=alpha),
+        "None":    dict(lam1=0.0,              lam2=0.0),
         "ridge":   dict(lam1=0.0,              lam2=alpha),
         "lasso":   dict(lam1=alpha,              lam2=0.0),
         "elastic": dict(lam1=alpha * l1_ratio,   lam2=alpha * (1 - l1_ratio)),
@@ -302,7 +302,7 @@ def _(
 
     gd_results = {}
     for reg in regs:
-        w, _ = gradient_descent(X, y, reg=reg, n_iter=10000, **gd_params[reg])
+        w, _ = gradient_descent(X, y, reg=reg, lr=0.01, n_iter=200000, **gd_params[reg])
         yhat = predict(X, w)
         gd_results[reg] = {"w": w, "yhat": yhat, "rmse": rmse(yhat, y)}
 
@@ -323,7 +323,6 @@ def _(
         print(f"GD RMSE:               {gd_results[reg]['rmse']:.6f}")
         print(f"SK RMSE:               {sk_results[reg]['rmse']:.6f}")
         print()
-
     return
 
 
@@ -338,7 +337,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Visualizing Regularization
+    ## Visualizing Regularization
     """)
     return
 
