@@ -180,15 +180,7 @@ def _(np):
     def backward(y, P, As, Zs, params):
         """
         Backpropagation through the network.
-
-        Assumes ReLU on the hidden layers and softmax on the output. The softmax
-        and cross-entropy derivatives are fused, which is why the base case is
-        simply (P - Y) / m rather than two separate steps.
-
-        Walks layers from L down to 1. At each layer it reads off that layer's
-        weight and bias gradients, then -- unless it is at layer 1 -- carries
-        dJ/dZ back one layer by crossing W and then the ReLU. dJ_dA and dJ_dZ are
-        partial products of the chain to help compute dJ_w[l]
+        Assumes ReLU on the hidden layers and softmax on the output. 
 
         Parameters
         ----------
