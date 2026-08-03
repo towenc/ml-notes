@@ -14,5 +14,5 @@ shallow-learning/
 └── softmax-regression.py                  # numpy softmax regression implementation
 
 deep-learning/
-└── MLP.py                  # numpy MLP classification implementation
+└── MLP.py                                 # numpy MLP classification implementation
 ```
