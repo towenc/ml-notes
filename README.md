@@ -18,7 +18,7 @@ deep-learning/
 ```
 
 ## Running the Notebooks
-You will need uv. [uv](https://docs.astral.sh/uv/getting-started/installation/):
+You will need [uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 Use marimo to open and edit the notebooks.
 For example:
