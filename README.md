@@ -16,3 +16,12 @@ shallow-learning/
 deep-learning/
 └── MLP.py                                 # numpy MLP classification implementation
 ```
+
+## Running the Notebooks
+You will need uv. [uv](https://docs.astral.sh/uv/getting-started/installation/):
+
+Use marimo to open and edit the notebooks.
+For example:
+```bash
+uv run marimo edit shallow-learning/linear-regression.py
+```
