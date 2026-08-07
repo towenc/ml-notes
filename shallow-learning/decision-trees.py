@@ -47,7 +47,7 @@ def _(np):
 
         if n_left == 0 or n_right == 0:
             return 0.0
-    
+
         gain = np.var(y_parent) - (n_left/n * np.var(y_left) + n_right/n * np.var(y_right))
 
         return gain
@@ -160,13 +160,17 @@ def _(Node, Optional, np, variance_reduction):
                 thresholds = (values[:-1] + values[1:]) / 2
                 for threshold in thresholds:
                     mask = X[:, feature] <= threshold
-                    gain = self.criterion(y, y[mask], y[~mask])
+                    # skips the threshold if it produces produces splits with leaf nodes with too little samples. 
+                    if len(y[mask]) < self.min_samples_leaf or len(y[~mask]) < self.min_samples_leaf:
+                        continue
                 
+                    gain = self.criterion(y, y[mask], y[~mask])
+ 
                     if gain > best_gain:
                         best_gain = gain
                         best_threshold = threshold
                         best_feature = feature
-                    
+                
             return best_feature, best_threshold, best_gain
 
         def _predict_row(self, x: np.ndarray) -> float:
