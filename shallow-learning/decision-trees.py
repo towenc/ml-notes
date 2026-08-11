@@ -36,6 +36,40 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Trees are "grown" according to the following algorithm:
+    1. All samples start at the root node.
+    2. Calculate information gain (entropy reduction for classification or variance reduction for regression) for all possible features, taking the midpoint between samples as the thresholds
+    3. Pick the feature and threshold that gives the maximum information gain.
+    5. Split the dataset according to the selected feature and threshold, creating left and right branches of the tree where the left branch holds the values that are less than or equal to the threshold.
+    6. Keep repeating the splitting process until stopping criteria is met
+        - stop when max depth is reached (max depth)
+        - stop when there are too few rows to split (min samples)
+        - stop when purity at a leaf node is 1.
+
+    **Information gain** is defined as:
+    $$\text{Information gain} = I^{\text{parent}} - \left( w^{\text{left}} I^{\text{left}} + w^{\text{right}} I^{\text{right}} \right)$$
+    Where $I$ is the impurity measure and $w$ is the ratio of samples in the branch ($w^{left} = \frac{n^{left}}{n^{parent}}$)
+
+    $I$ changes depending on the task. For regression, $I$ is the variance:
+
+    Let $\bar{y} = \frac{1}{m} \sum_{i=1}^{m} y^{(i)}$ at the node:
+    $$\text{Var} = \frac{1}{m} \sum_{i=1}^{m} \left( y^{(i)} - \bar{y} \right)^2$$
+
+    For classification, in this example the entropy $H$ is used.
+
+    With $K$ classes, let $p_k$ be the fraction of examples at the node with
+    $y^{(i)} = k$:
+
+    $$p_k = \frac{1}{m} \sum_{i=1}^{m} \mathbb{1}\left[ y^{(i)} = k \right]$$
+
+    $$H = -\sum_{k=1}^{K} p_k \log_2(p_k)$$
+    """)
+    return
+
+
 @app.cell
 def _(Optional, dataclass):
     @dataclass
@@ -47,13 +81,13 @@ def _(Optional, dataclass):
         and right
 
         Attributes:
-        feature: Index of feature used for split (none on leaves)
-        threshold: Split point. X[feature] <= threshold go left. Else right.
-        left: subtree for left side. None if a leaf node
-        right: subtree for right side. None if a leaf node
-        value: Prediction for samples at this leaf. None if not a leaf node.
-        n_samples: No. of training samples that reached this node.
-        gain: Impurity reduction from this node's split. 0.0 on leaf nodes
+            feature: Index of feature used for split (none on leaves)
+            threshold: Split point. X[feature] <= threshold go left. Else right.
+            left: subtree for left side. None if a leaf node
+            right: subtree for right side. None if a leaf node
+            value: Prediction for samples at this leaf. None if not a leaf node.
+            n_samples: No. of training samples that reached this node.
+            gain: Impurity reduction from this node's split. 0.0 on leaf nodes
         """
         feature: Optional[int] = None
         threshold: Optional[float] = None
@@ -114,7 +148,14 @@ def _(np):
 @app.cell
 def _(Node, Optional, entropy_reduction, np, variance_reduction):
     class DecisionTree:
-        """A tree, fit greedily by maximising variance reduction."""
+        """A tree, fit greedily by maximising a split criterion.
+        Criterion is provided by subclasses (DecisionTreeRegressor & DecisionTreeClassifer)
+
+        Attributes:
+            max_depth: Maximum tree depth. 
+            min_samples_split: A node with fewer samples becomes a leaf.
+            criterion: Returns the gain for a split with higher being better. The specific type (variance or entropy) is provided by the subclasses.
+        """
 
         def __init__(
             self,
@@ -123,19 +164,23 @@ def _(Node, Optional, entropy_reduction, np, variance_reduction):
             min_samples_leaf: int = 1,
             criterion=variance_reduction,
         ):
-            # Hyperparameters: everything describing *how* to fit.
-            # Nothing learned from data belongs in __init__.
+            # Hyperparameters
             self.max_depth = max_depth
             self.min_samples_split = min_samples_split
             self.min_samples_leaf = min_samples_leaf
             self.criterion = criterion
 
-            # Learned state. The trailing underscore is the sklearn convention
-            # for "this gets filled in by fit()".
             self.root_: Optional[Node] = None
 
         def fit(self, X: np.ndarray, y: np.ndarray) -> "DecisionTree":
             """Build the tree from training data.
+
+            Args: 
+                X: Feature matrix, shape (n_samples, n_features)
+                y: Targets, shape (n_samples, )
+            
+            Returns:
+                self
             """
             ...
             self.root_ = self._grow(X, y, depth=0)
@@ -183,6 +228,9 @@ def _(Node, Optional, entropy_reduction, np, variance_reduction):
 
         def _best_split(self, X: np.ndarray, y: np.ndarray) -> tuple:
             """Search every (feature, threshold) pair; return the best.
+
+            Returns:
+                (feature_index, threshold, gain) or (None, None, 0.0) when no candidate split produces positive gain
             """
             best_gain = 0.0
             best_feature = None
@@ -224,6 +272,9 @@ def _(Node, Optional, entropy_reduction, np, variance_reduction):
             super().__init__(criterion=criterion, **kwargs)
 
         def _leaf_value(self, y: np.ndarray):
+            """Return the prediction stored at leaf holding y. 
+            For regression, this is the mean of all the samples at the leaf node.
+            """
             return float(y.mean())
 
     class DecisionTreeClassifier(DecisionTree):
@@ -231,6 +282,9 @@ def _(Node, Optional, entropy_reduction, np, variance_reduction):
             super().__init__(criterion=criterion, **kwargs)
 
         def _leaf_value(self, y: np.ndarray):
+            """Return the prediction stored at leaf holding y. 
+            For classification, this is the class with the majority number of samples at the leaf node.
+            """
             values, counts = np.unique(y, return_counts=True)
             return values[np.argmax(counts)]
 
@@ -277,7 +331,6 @@ def _(Node, mo, np):
     def render_tree(node, names):
         return mo.plain_text("\n".join(tree_lines(node, names)))
 
-
     def from_sklearn(est, i=0):
         """Adapt a fitted sklearn tree into our Node type to render it the same way.
         """
@@ -316,11 +369,11 @@ def _(mo):
 
 @app.cell
 def _(load_iris, plt):
-    ## Load the iris dataset.
-
+    # Load the iris dataset.
     iris = load_iris()
     X, y, names, classes = iris.data, iris.target, list(iris.feature_names), iris.target_names
 
+    # Plot
     fig, ax = plt.subplots(figsize=(6,5))
     colors = ["#4C72B0", "#DD8452", "#55A868"]
     for k in range(3):
@@ -343,7 +396,6 @@ def _(
     render_tree,
     y,
 ):
-    # Same depth on both sides, or the comparison means nothing.
     _depth = 3
 
     clf = DecisionTreeClassifier(max_depth=_depth).fit(X, y)
@@ -386,16 +438,11 @@ def _(mo):
 
 
 @app.cell
-def _(load_diabetes, mo):
-    ## Load the datawhat are 
+def _(load_diabetes):
+    # Loade the diabetes dataset
     diabetes = load_diabetes(scaled=False)
-
     X_reg, y_reg, names_reg = diabetes.data, diabetes.target, list(diabetes.feature_names)
 
-    mo.md(
-        f"`{X_reg.shape[0]}` samples · `{X_reg.shape[1]}` features · "
-        f"target (disease progression) from `{y_reg.min():.0f}` to `{y_reg.max():.0f}`"
-    )
     return X_reg, names_reg, y_reg
 
 
@@ -433,7 +480,6 @@ def _(
         widths="equal",
         gap=2,
     )
-
     return
 
 
