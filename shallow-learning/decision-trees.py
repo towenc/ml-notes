@@ -178,7 +178,7 @@ def _(Node, Optional, entropy_reduction, np, variance_reduction):
             Args: 
                 X: Feature matrix, shape (n_samples, n_features)
                 y: Targets, shape (n_samples, )
-            
+    
             Returns:
                 self
             """
@@ -439,10 +439,9 @@ def _(mo):
 
 @app.cell
 def _(load_diabetes):
-    # Loade the diabetes dataset
+    # Loads the diabetes dataset
     diabetes = load_diabetes(scaled=False)
     X_reg, y_reg, names_reg = diabetes.data, diabetes.target, list(diabetes.feature_names)
-
     return X_reg, names_reg, y_reg
 
 
