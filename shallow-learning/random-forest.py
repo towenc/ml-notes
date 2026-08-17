@@ -12,9 +12,24 @@ def _():
     import numpy as np
     import matplotlib.pyplot as plt
 
-    from numpy.random import SeedSequence, default_rng
+    from numpy.random import default_rng
+    from sklearn.datasets import load_diabetes, load_iris
+    from sklearn.ensemble import RandomForestClassifier as SkRF_clf, RandomForestRegressor as SkRF_reg
+    from sklearn.model_selection import train_test_split
 
-    return Optional, SeedSequence, dataclass, default_rng, mo, np
+    return (
+        Optional,
+        SkRF_clf,
+        SkRF_reg,
+        dataclass,
+        default_rng,
+        load_diabetes,
+        load_iris,
+        mo,
+        np,
+        plt,
+        train_test_split,
+    )
 
 
 @app.cell(hide_code=True)
@@ -33,14 +48,14 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    #### Decision Tree Implementation
+    ### Decision Tree Implementation
     See 'decision-trees.py' for implementation details and comparison
     """)
     return
 
 
 @app.cell
-def _(Optional, dataclass, np):
+def _(Optional, dataclass, default_rng, np):
     @dataclass
     class Node:
         """
@@ -69,7 +84,7 @@ def _(Optional, dataclass, np):
         @property
         def is_leaf(self) -> bool:
             return self.right is None and self.left is None
-    
+
     def variance_reduction(y_parent: np.ndarray, y_left: np.ndarray, y_right: np.ndarray):
         """Calculates the information gain for a split. Used for regression.
         """
@@ -124,7 +139,7 @@ def _(Optional, dataclass, np):
             min_samples_split: int = 2,
             min_samples_leaf: int = 1,
             max_features: Optional[int] = None,
-            random_state: Optional[int] = None,
+            random_state: Optional[int] = None,       
             criterion=variance_reduction,
         ):
             # Hyperparameters
@@ -134,7 +149,6 @@ def _(Optional, dataclass, np):
             self.max_features = max_features
             self.random_state= random_state
             self.criterion = criterion
-
             self.root_: Optional[Node] = None
 
         def fit(self, X: np.ndarray, y: np.ndarray) -> "DecisionTree":
@@ -147,6 +161,7 @@ def _(Optional, dataclass, np):
             Returns:
                 self
             """
+            self.rng_  = default_rng(self.random_state)
             self.root_ = self._grow(X, y, depth=0)
 
             return self
@@ -212,7 +227,7 @@ def _(Optional, dataclass, np):
             for feature in features:
                 values = np.unique(X[:, feature]) 
                 thresholds = (values[:-1] + values[1:]) / 2
-            
+        
                 for threshold in thresholds:
                     mask = X[:, feature] <= threshold
                     # skips the threshold if it produces produces splits with leaf nodes with too little samples. 
@@ -366,21 +381,20 @@ def random_forest(
     DecisionTreeClassifier,
     DecisionTreeRegressor,
     Optional,
-    SeedSequence,
     default_rng,
     np,
 ):
     class RandomForest:
-        """An ensemble of decision trees, each fit on a bootstrap sample of the rows
+        """
+        An ensemble of decision trees, each fit on a bootstrap sample of the rows
         and restricted to a random subset of features at every split.
 
-        Subclasses supply the three varying pieces:
-            tree_cls: the DecisionTree subclass to build
+        Subclasses [RandomForestRegressor, RandomForestClassifier] give the following attributes:
+            tree_cls: the DecisionTree subclass to build (regression or classification)
             _default_max_features(n_features): used when max_features is None
             _aggregate(tree_preds): combines a (n_estimators, n_samples) array into
                 a single (n_samples,) prediction
         """
-
         tree_cls = None
 
         def __init__(
@@ -404,32 +418,24 @@ def random_forest(
             self.trees_: list = []
 
         def fit(self, X: np.ndarray, y: np.ndarray) -> "RandomForest":
-            """Build the ensemble.
-
-            TODO:
-              1. Resolve the effective max_features: self.max_features if given,
-                 otherwise self._default_max_features(X.shape[1]).
-              2. Produce n_estimators independent seeds from self.random_state.
-                 (np.random.SeedSequence(self.random_state).spawn(...) is one way.)
-              3. For each tree: draw a bootstrap sample, construct self.tree_cls(...)
-                 with the resolved max_features and that tree's own seed, fit it,
-                 and append it to self.trees_.
-
-            Returns:
-                self
             """
-            k = k = self.max_features if self.max_features is not None else X.shape[1]
+            Builds the ensemble. Fits many trees on bootstrapped data
+            """
+            if self.max_features is not None:
+                k = self.max_features
+            else:
+                k = self._default_max_features(X.shape[1])
+   
             self.trees_ = []
-            # Generate seeds for fitting each tree
-            ss = SeedSequence(self.random_state)
-            children = ss.spawn(self.n_estimators)
-            seeds = [default_rng(c) for c in children]
+        
+            # Generate seeds for bootstrapping and fitting each tree
+            rng = default_rng(self.random_state)
+            seeds = rng.integers(0, 2**32, size=(self.n_estimators, 2))
 
-            for seed in seeds:
-                rng = default_rng(seed)
+            for boot_seed, tree_seed in seeds:
 
                 if self.bootstrap:
-                    Xs, ys = self._bootstrap(X, y, rng)
+                    Xs, ys = self._bootstrap(X, y, default_rng(boot_seed))
                 else:
                     Xs, ys = X, y
 
@@ -438,7 +444,7 @@ def random_forest(
                     min_samples_split = self.min_samples_split,
                     min_samples_leaf  = self.min_samples_leaf,
                     max_features      = k,
-                    random_state      = seed,
+                    random_state      = int(tree_seed),
                 )
                 tree.fit(Xs, ys)
                 self.trees_.append(tree)
@@ -446,47 +452,263 @@ def random_forest(
             return self
 
         def _bootstrap(self, X: np.ndarray, y: np.ndarray, rng) -> tuple:
-            """Creates new dataset by randomly drawing samples from original dataset
-               randomly with replacement.
+            """
+            Creates new dataset by randomly drawing samples from original dataset
+            with repacekemtn
             """
             n = X.shape[0]
             idx = rng.integers(0, n, size= n)
-        
+    
             return X[idx], y[idx]
-                        
+                    
         def predict(self, X: np.ndarray) -> np.ndarray:
-            """Predict by combining every tree's prediction.
-
-            TODO: build a (n_estimators, n_samples) array of per-tree predictions,
-            then hand it to self._aggregate.
             """
-            raise NotImplementedError
+            Predict by combining every tree's prediction.
+            """
+            predictions = []
+            for tree in self.trees_:
+                predictions.append(tree.predict(X))
+        
+            return self._aggregate(np.array(predictions))
 
 
     class RandomForestRegressor(RandomForest):
         tree_cls = DecisionTreeRegressor
 
         def _default_max_features(self, n_features: int) -> int:
-            """TODO: the regression convention. Never return less than 1."""
-            raise NotImplementedError
+            """Returns the default number of features to use when fitting a single tree.
+            Minimum number of features will be 1.        
+            """
+            max_features = max(1, n_features // 3)
+            return max_features
 
         def _aggregate(self, tree_preds: np.ndarray) -> np.ndarray:
-            """TODO: combine (n_estimators, n_samples) -> (n_samples,)."""
-            raise NotImplementedError
+            """Aggregates the predictions of all the trees using the mean."""
+
+            yhat = np.mean(tree_preds, axis=0)
+            return yhat
 
 
     class RandomForestClassifier(RandomForest):
         tree_cls = DecisionTreeClassifier
 
         def _default_max_features(self, n_features: int) -> int:
-            """TODO: the classification convention. Never return less than 1."""
-            raise NotImplementedError
+            """Returns the default number of features to use when fitting a single tree."""
+            max_features = int(np.sqrt(n_features))
+            return max_features
 
         def _aggregate(self, tree_preds: np.ndarray) -> np.ndarray:
-            """TODO: a vote, not a mean. np.unique(..., return_counts=True) per column
-            works, though there are tidier ways."""
-            raise NotImplementedError
+            """Aggregates the predictions of all the trees using the majority vote"""
 
+            yhat = []
+            for j in range(tree_preds.shape[1]):
+                classes, counts = np.unique(tree_preds[:, j], return_counts=True)
+                yhat.append(classes[counts.argmax()])
+        
+            return np.array(yhat)
+
+    return RandomForestClassifier, RandomForestRegressor
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Comparison and Evaluation
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Classification
+    """)
+    return
+
+
+@app.cell
+def _(load_iris, plt):
+    # Load the iris dataset.
+    iris = load_iris()
+    X, y, names, classes = iris.data, iris.target, list(iris.feature_names), iris.target_names
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(6,5))
+    colors = ["#4C72B0", "#DD8452", "#55A868"]
+    for k in range(3):
+        m = y == k
+        ax.scatter(X[m, 2], X[m, 3], c=colors[k], label=classes[k],
+                   s=35, alpha=0.8, edgecolor="white", linewidth=0.5)
+    ax.set_xlabel(names[2]); ax.set_ylabel(names[3])
+    ax.legend()
+    return X, y
+
+
+@app.cell
+def _(RandomForestClassifier, SkRF_clf, X, mo, train_test_split, y):
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, random_state=0)
+
+    clf = RandomForestClassifier(n_estimators=3, max_depth=3).fit(Xtr, ytr)
+
+    sk_clf = SkRF_clf(
+        n_estimators      = 3,
+        max_depth         = 3,
+        min_samples_split = 2,
+        min_samples_leaf  = 1,
+        max_features      = "sqrt",
+        bootstrap         = True,
+        random_state      = 0,
+    ).fit(Xtr, ytr)
+
+    tr_acc_mine = (clf.predict(Xtr) == ytr).mean()
+    tr_acc_sk   = (sk_clf.predict(Xtr) == ytr).mean()
+
+    te_acc_mine = (clf.predict(Xte) == yte).mean()
+    te_acc_sk   = (sk_clf.predict(Xte) == yte).mean()
+
+    mo.md(
+        f"""
+        **from scratch**
+        ----------------
+        Training Accuracy: {tr_acc_mine:.4f} \n
+        Test Accuracy:     {te_acc_mine:.4f}
+
+        **sklearn**
+        ----------------
+        Training Accuracy: {tr_acc_sk:.4f} \n
+        Test Accuracy:     {te_acc_sk:.4f} \n
+
+        Accuraries match between sklearn and from scratch implementation. They cannot exactly match due to randomness
+        """
+    )
+
+    return Xte, Xtr, yte, ytr
+
+
+@app.cell
+def _(RandomForestClassifier, Xte, Xtr, mo, plt, yte, ytr):
+    n_trees = [1, 2, 5, 10, 20, 50, 100, 200]
+    tr_acc = []
+    te_acc = []
+
+    for n in n_trees:
+        mine = RandomForestClassifier(n_estimators=n, max_depth=3).fit(Xtr, ytr)
+        tr_acc.append((mine.predict(Xtr) == ytr).mean())
+        te_acc.append((mine.predict(Xte) == yte).mean())
+
+    plt.plot(n_trees, tr_acc, "o--", label="Training Accuracy")
+    plt.plot(n_trees, te_acc, "s--", label="Test Accuracy")
+    plt.xscale("log")
+    plt.xlabel("n_estimators")
+    plt.ylabel("accuracy")
+    plt.grid(alpha=0.3)
+    plt.legend()
+    plt.show()
+
+    mo.md(
+        """
+        Learning curve is also as expected. As the number of trees fit (n_estimators) increases after 1 the accuracies increase.
+        """
+    )
+    return (n_trees,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Regression
+    """)
+    return
+
+
+@app.cell
+def _(load_diabetes):
+    # Loads the diabetes dataset
+    diabetes = load_diabetes(scaled=False)
+    X_reg, y_reg, names_reg = diabetes.data, diabetes.target, list(diabetes.feature_names)
+    return X_reg, y_reg
+
+
+@app.cell
+def _(RandomForestRegressor, SkRF_reg, X_reg, mo, np, train_test_split, y_reg):
+    Xtr_reg, Xte_reg, ytr_reg, yte_reg = train_test_split(X_reg, y_reg, test_size=0.3, random_state=0)
+
+    reg = RandomForestRegressor(n_estimators=100, max_depth=15).fit(Xtr_reg, ytr_reg)
+
+    k_reg = max(1, X_reg.shape[1] // 3)
+    sk_reg = SkRF_reg(
+        n_estimators      = 100,
+        max_depth         = 15,
+        min_samples_split = 2,
+        min_samples_leaf  = 1,
+        max_features      = k_reg,
+        bootstrap         = True,
+        random_state      = 0,
+    ).fit(Xtr_reg, ytr_reg)
+
+    def rmse(yhat, y):
+        """Computes RMSE for comparison regression trees
+        """
+        return np.sqrt(np.mean((yhat - y)**2))
+
+    tr_rmse_mine = rmse(reg.predict(Xtr_reg), ytr_reg)
+    te_rmse_mine = rmse(reg.predict(Xte_reg), yte_reg)
+
+    tr_rmse_sk = rmse(sk_reg.predict(Xtr_reg), ytr_reg)
+    te_rmse_sk = rmse(sk_reg.predict(Xte_reg), yte_reg)
+
+    mo.md(
+        f"""
+        **from scratch**
+        ----------------
+        Training Accuracy: {tr_rmse_mine:.4f} \n
+        Test Accuracy:     {te_rmse_mine:.4f}
+
+        **sklearn**
+        ----------------
+        Training Accuracy: {tr_rmse_sk:.4f} \n
+        Test Accuracy:     {te_rmse_sk:.4f} \n
+
+        RMSE match between sklearn and from scratch implementation. They cannot exactly match due to randomness
+        """
+    )
+    return Xte_reg, Xtr_reg, rmse, yte_reg, ytr_reg
+
+
+@app.cell
+def _(
+    RandomForestRegressor,
+    Xte_reg,
+    Xtr_reg,
+    mo,
+    n_trees,
+    plt,
+    rmse,
+    yte_reg,
+    ytr_reg,
+):
+    tr_rmse = []
+    te_rmse = []
+
+    for n_reg in n_trees:
+        mine_reg = RandomForestRegressor(n_estimators=n_reg, max_depth=3).fit(Xtr_reg, ytr_reg)
+        tr_rmse.append(rmse(mine_reg.predict(Xtr_reg), ytr_reg))
+        te_rmse.append(rmse(mine_reg.predict(Xte_reg), yte_reg))
+
+    plt.plot(n_trees, tr_rmse, "o--", label="Training RMSE")
+    plt.plot(n_trees, te_rmse, "s--", label="Test RMSE")
+    plt.xscale("log")
+    plt.xlabel("n_estimators")
+    plt.ylabel("RMSE")
+    plt.grid(alpha=0.3)
+    plt.legend()
+    plt.show()
+
+    mo.md(
+        """
+        Learning curve is also as expected. As the number of trees fit (n_estimators) increases after 1 the RMSE decreases.
+        """
+    )
     return
 
 
