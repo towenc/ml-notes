@@ -35,13 +35,26 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Random Forest
+    # Random Forest
     """)
     return
 
 
 @app.cell(hide_code=True)
-def _():
+def _(mo):
+    mo.md(r"""
+    The random forest algorithm builds on the decision tree algorithm. It ensembles many decision trees fit on a random subset of features on bootstrapped data.
+
+    The algorithm is as follows:
+
+    For every tree you will fit:
+    1. Sample the data with replacement to create a new dataset of the same size.
+    2. Choose a random subset of the features.
+    3. Fit a single decision tree.
+
+    Aggregate the predictions of every tree you fit as the final prediction.
+    For regression, this is taking the mean of the predictions. For classification, you take the majority vote of all the decision trees.
+    """)
     return
 
 
@@ -227,7 +240,7 @@ def _(Optional, dataclass, default_rng, np):
             for feature in features:
                 values = np.unique(X[:, feature]) 
                 thresholds = (values[:-1] + values[1:]) / 2
-        
+    
                 for threshold in thresholds:
                     mask = X[:, feature] <= threshold
                     # skips the threshold if it produces produces splits with leaf nodes with too little samples. 
@@ -279,99 +292,11 @@ def _(Optional, dataclass, default_rng, np):
     return DecisionTreeClassifier, DecisionTreeRegressor
 
 
-@app.cell
-def tree_checks(DecisionTreeRegressor, mo, np):
-    def _tree_checks():
-        """Three trees that should all differ from each other. Do they?"""
-        rng = np.random.default_rng(0)
-        X = rng.normal(size=(200, 5))
-        y = 3 * X[:, 0] - 2 * X[:, 1] + 0.5 * rng.normal(size=200)
-
-        def fingerprint(tree):
-            """Flatten a fitted tree into a comparable list of its splits."""
-            out = []
-
-            def walk(node):
-                if node.is_leaf:
-                    out.append(("leaf", round(float(node.value), 6)))
-                    return
-                out.append((node.feature, round(float(node.threshold), 6)))
-                walk(node.left)
-                walk(node.right)
-
-            walk(tree.root_)
-            return out
-
-        def fit(**kwargs):
-            return fingerprint(DecisionTreeRegressor(max_depth=3, **kwargs).fit(X, y))
-
-        seed_a = fit(max_features=1, random_state=0)
-        seed_b = fit(max_features=1, random_state=999)
-        full_search = fit(max_features=None, random_state=0)
-
-        checks = [
-            ("two different seeds build two different trees", seed_a != seed_b),
-            ("max_features=1 differs from the full greedy search", seed_a != full_search),
-        ]
-
-        lines = ["**Is `max_features` actually restricting the split search?**", ""]
-        lines += ["| | check |", "|---|---|"]
-        lines += [f"| {'PASS' if ok else 'FAIL'} | {label} |" for label, ok in checks]
-        lines += [""]
-        if all(ok for _, ok in checks):
-            lines += ["`max_features` works. Your trees can be decorrelated."]
-        else:
-            lines += [
-                "`max_features` is being ignored: every tree is the same greedy tree,",
-                "so a forest built on it would only be bagging. Look at the loop header",
-                "in `DecisionTree._best_split` -- what is it iterating over, and what did",
-                "you just spend four lines computing?",
-            ]
-        return mo.md("\n".join(lines))
-
-
-    _tree_checks()
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    #### Random Forest Implementation
+    ### Random Forest Implementation
     Based on decision tree implementation
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    #### Five questions to answer before writing the code
-
-    **1. Bootstrap.** Each tree trains on `n` rows drawn *with replacement* from the `n`
-    training rows. Roughly what fraction of the original rows does any given tree never
-    see? It converges to a constant, and that constant is what makes out-of-bag scoring
-    possible.
-
-    **2. Seeding.** `DecisionTree.fit` builds `self.rng_` from `self.random_state`. If the
-    forest passes the same `random_state` to all `n_estimators` trees, what do you get?
-    How do you give each tree an independent stream that is still reproducible from one
-    forest-level seed?
-
-    **3. `max_features` default.** `None` means "search every feature" -- the wrong default
-    for a forest. The convention is `sqrt(n_features)` for classification and
-    `n_features // 3` for regression. Why would classification want *fewer* candidate
-    features per split than regression?
-
-    **4. Aggregation.** Regression averages the tree predictions. Classification cannot
-    average labels. Your `DecisionTreeClassifier._leaf_value` returns a hard label, not a
-    class distribution -- what does that force your forest's `predict` to do, and what
-    capability do you give up by storing only the argmax at each leaf?
-
-    **5. Shared structure.** `RandomForestRegressor` and `RandomForestClassifier` differ in
-    exactly three places: which tree class to build, the default `max_features`, and how to
-    combine predictions. You already solved this shape once with `DecisionTree` and its two
-    subclasses -- mirror it.
     """)
     return
 
@@ -389,11 +314,14 @@ def random_forest(
         An ensemble of decision trees, each fit on a bootstrap sample of the rows
         and restricted to a random subset of features at every split.
 
-        Subclasses [RandomForestRegressor, RandomForestClassifier] give the following attributes:
+        Subclasses [RandomForestRegressor, RandomForestClassifier] define:
             tree_cls: the DecisionTree subclass to build (regression or classification)
             _default_max_features(n_features): used when max_features is None
             _aggregate(tree_preds): combines a (n_estimators, n_samples) array into
                 a single (n_samples,) prediction
+
+        Attributes:]
+            trees_: the fitted estimators, given by fit()    
         """
         tree_cls = None
 
@@ -419,15 +347,20 @@ def random_forest(
 
         def fit(self, X: np.ndarray, y: np.ndarray) -> "RandomForest":
             """
-            Builds the ensemble. Fits many trees on bootstrapped data
+            Builds the ensemble. Fits n_estimators trees, each on a boostrapped dataset when self.bootstrap
+
+            Returns:
+                self
             """
+
+        
             if self.max_features is not None:
                 k = self.max_features
             else:
                 k = self._default_max_features(X.shape[1])
    
             self.trees_ = []
-        
+    
             # Generate seeds for bootstrapping and fitting each tree
             rng = default_rng(self.random_state)
             seeds = rng.integers(0, 2**32, size=(self.n_estimators, 2))
@@ -454,21 +387,28 @@ def random_forest(
         def _bootstrap(self, X: np.ndarray, y: np.ndarray, rng) -> tuple:
             """
             Creates new dataset by randomly drawing samples from original dataset
-            with repacekemtn
+            with replacement
+
+            Returns:
+                (X_sample, y_sample), both length n
             """
             n = X.shape[0]
             idx = rng.integers(0, n, size= n)
-    
+
             return X[idx], y[idx]
-                    
+                
         def predict(self, X: np.ndarray) -> np.ndarray:
             """
-            Predict by combining every tree's prediction.
+            Predict by combining every tree's prediction via _aggregate
+            Majority vote for classification, mean for regression.
+
+            Returns:
+                (n_samples,) predictions
             """
             predictions = []
             for tree in self.trees_:
                 predictions.append(tree.predict(X))
-        
+    
             return self._aggregate(np.array(predictions))
 
 
@@ -493,8 +433,10 @@ def random_forest(
         tree_cls = DecisionTreeClassifier
 
         def _default_max_features(self, n_features: int) -> int:
-            """Returns the default number of features to use when fitting a single tree."""
-            max_features = int(np.sqrt(n_features))
+            """Returns the default number of features to use when fitting a single tree.
+            Minimum number of features will be 1
+            """
+            max_features = max(1, int(np.sqrt(n_features)))
             return max_features
 
         def _aggregate(self, tree_preds: np.ndarray) -> np.ndarray:
@@ -504,7 +446,7 @@ def random_forest(
             for j in range(tree_preds.shape[1]):
                 classes, counts = np.unique(tree_preds[:, j], return_counts=True)
                 yhat.append(classes[counts.argmax()])
-        
+    
             return np.array(yhat)
 
     return RandomForestClassifier, RandomForestRegressor
@@ -513,7 +455,7 @@ def random_forest(
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Comparison and Evaluation
+    # Comparison and Evaluation
     """)
     return
 
@@ -581,7 +523,6 @@ def _(RandomForestClassifier, SkRF_clf, X, mo, train_test_split, y):
         Accuraries match between sklearn and from scratch implementation. They cannot exactly match due to randomness
         """
     )
-
     return Xte, Xtr, yte, ytr
 
 

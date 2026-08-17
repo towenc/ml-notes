@@ -10,7 +10,8 @@ shallow-learning/
 ├── logistic-regression.py                 # numpy GD implementation
 ├── linear-regression-regularization.py    # numpy GD implementation for ridge, lasso and elastic regression
 ├── softmax-regression.py                  # numpy softmax regression implementation
-└── decision-trees.py                      # numpy regression & classification decision tree implementation
+├── decision-trees.py                      # numpy regression & classification decision tree implementation
+└── random-forest.py                       # numpy regression & classification random forest implementation
 
 deep-learning/
 └── MLP.py                                 # numpy MLP classification implementation
