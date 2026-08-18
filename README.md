@@ -14,7 +14,7 @@ shallow-learning/
 └── random-forest.py                       # numpy regression & classification random forest implementation
 
 deep-learning/
-└── MLP.py                                 # numpy MLP classification implementation
+└── [MLP.py](https://molab.marimo.io/notebooks/nb_NNcLJ6A9aiZ92Znbx3Qqxv)                                 # numpy MLP classification implementation
 ```
 
 ## Running the Notebooks
