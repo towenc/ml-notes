@@ -4,7 +4,7 @@ My machine learning notes. Updating as I find time to document what I learn.
 
 ## Contents
 
-```
+
 shallow-learning/
 ├── linear-regression.py                   # Closed form & numpy GD implementation
 ├── logistic-regression.py                 # numpy GD implementation
@@ -15,7 +15,7 @@ shallow-learning/
 
 deep-learning/
 └── [MLP.py](https://molab.marimo.io/notebooks/nb_NNcLJ6A9aiZ92Znbx3Qqxv)                                 # numpy MLP classification implementation
-```
+
 
 ## Running the Notebooks
 You will need [uv](https://docs.astral.sh/uv/getting-started/installation/):
