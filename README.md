@@ -4,8 +4,6 @@ My machine learning notes. Updating as I find time to document what I learn.
 
 ## Contents
 
-## Notebooks
-
 **`classical-ml/`**
 
 - [linear-regression.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/linear-regression.py) — Closed form & numpy GD implementation
