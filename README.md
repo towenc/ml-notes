@@ -4,17 +4,20 @@ My machine learning notes. Updating as I find time to document what I learn.
 
 ## Contents
 
-### shallow-learning/
-linear-regression.py                   
-- Closed form & numpy GD implementation
-logistic-regression.py                 - numpy GD implementation
-linear-regression-regularization.py    - numpy GD implementation for ridge, lasso and elastic regression
-softmax-regression.py                  - numpy softmax regression implementation
-decision-trees.py                      - numpy regression & classification decision tree implementation
-random-forest.py                       - numpy regression & classification random forest implementation
+## Notebooks
 
-###deep-learning/
-[MLP.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/deep-learning/MLP.py)                               - numpy MLP classification implementation
+**`shallow-learning/`**
+
+- [linear-regression.py](...) — closed form & NumPy GD
+- [logistic-regression.py](...) — NumPy GD
+- [linear-regression-regularization.py](...) — ridge, lasso, elastic net
+- [softmax-regression.py](...) — NumPy softmax regression
+- [decision-trees.py](...) — regression & classification trees
+- [random-forest.py](...) — regression & classification forests
+
+**`deep-learning/`**
+
+- [MLP.py](...) — NumPy MLP classification
 
 ## Running the Notebooks
 You will need [uv](https://docs.astral.sh/uv/getting-started/installation/):
