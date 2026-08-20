@@ -13,6 +13,7 @@ My machine learning notes. Updating as I find time to document what I learn.
 - [decision-trees.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/decision-trees.py) — numpy regression & classification decision tree implementation
 - [random-forest.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/random-forest.py) — numpy regression & classification random forest implementation
 - [gradient-boosting.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/gradient-boosting.py) — numpy regression & binary classification gradient boosted trees implementation
+
 **`deep-learning/`**
 
 - [MLP.py](...) — numpy MLP classification implementation
