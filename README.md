@@ -6,13 +6,13 @@ My machine learning notes. Updating as I find time to document what I learn.
 
 **`classical-ml/`**
 
-- [linear-regression.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/linear-regression.py) — Closed form & numpy GD implementation
+- [linear-regression.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/linear-regression.py) — closed form & numpy GD implementation
 - [logistic-regression.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/logistic-regression.py) — numpy GD implementation
 - [linear-regression-regularization.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/linear-regression-regularization.py) — numpy GD implementation for ridge, lasso and elastic regression
 - [softmax-regression.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/softmax-regression.py) — numpy softmax regression implementation
 - [decision-trees.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/decision-trees.py) — numpy regression & classification decision tree implementation
 - [random-forest.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/random-forest.py) — numpy regression & classification random forest implementation
-
+- [gradient-boosting.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/gradient-boosting.py) — numpy regression & binary classification gradient boosted trees implementation
 **`deep-learning/`**
 
 - [MLP.py](...) — numpy MLP classification implementation
