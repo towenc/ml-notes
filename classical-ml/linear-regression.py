@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.14"
+__generated_with = "0.23.16"
 app = marimo.App()
 
 
@@ -159,15 +159,14 @@ def _(
     yhat_sci = model.predict(X)
     rmse_sci = rmse(yhat_sci, y)
     theta_sci = model.coef_
-    intercept_sci = model.intercept_
     return (
         TRUE_BIAS,
         coef,
         history,
-        intercept_sci,
         rmse_grad,
         rmse_normal,
         rmse_sci,
+        theta_sci,
         w_grad,
         w_normal,
     )
@@ -195,9 +194,9 @@ def _(
     rmse_grad,
     rmse_normal,
     rmse_sci,
+    theta_sci,
     w_grad,
     w_normal,
-    w_sci,
 ):
     # Intercept
     print("----Intercept----")
@@ -211,7 +210,7 @@ def _(
     print("----Weights----")
     print(f"Normal Eqn:            {w_normal[1:]}")
     print(f"Gradient Descent:      {w_grad[1:]}")
-    print(f"Scikit-learn:          {w_sci}")
+    print(f"Scikit-learn:          {theta_sci}")
     print(f"True coef:             {coef}")
 
     # RMSE
