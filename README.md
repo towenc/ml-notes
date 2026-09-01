@@ -18,7 +18,7 @@ My machine learning notes. Updating as I find time to document what I learn.
 
 **`deep-learning/`**
 
-- [MLP.py](...) — numpy MLP classification implementation
+- [MLP.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/deep-learning/MLP.py) — numpy MLP classification implementation
 
 ## Running the Notebooks
 You will need [uv](https://docs.astral.sh/uv/getting-started/installation/):
