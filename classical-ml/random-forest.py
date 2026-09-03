@@ -240,7 +240,7 @@ def _(Optional, dataclass, default_rng, np):
             for feature in features:
                 values = np.unique(X[:, feature]) 
                 thresholds = (values[:-1] + values[1:]) / 2
-    
+
                 for threshold in thresholds:
                     mask = X[:, feature] <= threshold
                     # skips the threshold if it produces produces splits with leaf nodes with too little samples. 
@@ -353,14 +353,14 @@ def random_forest(
                 self
             """
 
-        
+
             if self.max_features is not None:
                 k = self.max_features
             else:
                 k = self._default_max_features(X.shape[1])
    
             self.trees_ = []
-    
+
             # Generate seeds for bootstrapping and fitting each tree
             rng = default_rng(self.random_state)
             seeds = rng.integers(0, 2**32, size=(self.n_estimators, 2))
@@ -396,7 +396,7 @@ def random_forest(
             idx = rng.integers(0, n, size= n)
 
             return X[idx], y[idx]
-                
+        
         def predict(self, X: np.ndarray) -> np.ndarray:
             """
             Predict by combining every tree's prediction via _aggregate
@@ -408,7 +408,7 @@ def random_forest(
             predictions = []
             for tree in self.trees_:
                 predictions.append(tree.predict(X))
-    
+
             return self._aggregate(np.array(predictions))
 
 
@@ -446,7 +446,7 @@ def random_forest(
             for j in range(tree_preds.shape[1]):
                 classes, counts = np.unique(tree_preds[:, j], return_counts=True)
                 yhat.append(classes[counts.argmax()])
-    
+
             return np.array(yhat)
 
     return RandomForestClassifier, RandomForestRegressor
@@ -463,7 +463,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Classification
+    ## Classification
     """)
     return
 
@@ -557,7 +557,7 @@ def _(RandomForestClassifier, Xte, Xtr, mo, plt, yte, ytr):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Regression
+    ## Regression
     """)
     return
 
