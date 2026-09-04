@@ -11,11 +11,21 @@ def _():
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
-    from sklearn.datasets import load_diabetes, load_iris, make_circles, make_moons
+    from sklearn.datasets import load_diabetes, make_moons
     from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
     from sklearn.model_selection import train_test_split
 
-    return KNeighborsClassifier, make_moons, mo, mpl, np, plt, train_test_split
+    return (
+        KNeighborsClassifier,
+        KNeighborsRegressor,
+        load_diabetes,
+        make_moons,
+        mo,
+        mpl,
+        np,
+        plt,
+        train_test_split,
+    )
 
 
 @app.cell(hide_code=True)
@@ -53,43 +63,80 @@ def _(mo):
 @app.cell
 def _(np):
     class kNN:
+        """k-Nearest Neighbours estimator for classication and regression.
 
+        Parameters
+        -----------
+        k : int, default=5
+            Number of neighbours used for each prediction. Should be k < n_samples
+        mode: {"classifcation", "regression"}, default="classifcation"
+            For classification the majority label is returned. For regression the mean of neighbours is returned
+        p : float, default=2
+            Order of the Minkowski distance. p=1 gives Manhattan distance and p=2 gives Euclidean distance
+
+        Attributes
+        -----------
+        X_train_ : ndarray of shape (n_samples, n_features)
+            Training data stored by fit
+        y_train_ : ndarray of shape (n_samples,)
+            Training targets stored by fit
+        """
         def __init__(self, k = 5, mode="classification", p=2):
             self.mode = mode
             self.p = p
             self.k = k
 
         def _compute_distances(self, x, X):
+            """Computes Minkowski distance
 
+            Parameters
+            -----------
+            x : ndarray of shape (n_features,)
+                Query pointg
+            X : ndarray of shape (n_samples, n_features)
+                Reference points (training data)
+
+            Returns
+            --------
+            distances : ndarray of shape (n_samples,)
+                Distance from x to each row of X
+            """
             distances = (np.sum(abs((X - x))**self.p, axis = 1)) ** (1/self.p)
-          
+        
             return distances
 
         def _kneighbours(self, x):
+            """Finds indices of k training points closet to x (query point)
+            """
             distances = self._compute_distances(x, self.X_train_)
             idx = np.argpartition(distances, self.k)[: self.k]
             idx = idx[np.argsort(distances[idx])]
+        
             return idx
 
         def _aggregate(self, labels):
-
+            """Neighbour labels are aggregated into a single predictgion
+            """
             if self.mode == "regression":
                 return np.mean(labels)
             elif self.mode == "classification":
-
                 values, counts = np.unique(labels, return_counts=True)
+            
                 return values[np.argmax(counts)]
             else:
                 raise ValueError(f"Unknown mode {self.mode}")
 
         def fit(self, X, y):
+            """Stores the training data. 
+            """
             self.X_train_ = X
             self.y_train_  = y
 
             return self
 
         def predict(self, X):
-
+            """Predict a target for each row of X
+            """
             predictions = []
 
             for x in X:
@@ -98,10 +145,6 @@ def _(np):
                 predictions.append(self._aggregate(labels))
 
             return np.array(predictions)
-            
-        
-        
-
 
     return (kNN,)
 
@@ -110,6 +153,14 @@ def _(np):
 def _(mo):
     mo.md(r"""
     ## Comparison
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Classification
     """)
     return
 
@@ -131,7 +182,6 @@ def _(make_moons, plt):
                    s=35, alpha=0.8, edgecolor="white", linewidth=0.5)
     ax.set_xlabel(names[0]); ax.set_ylabel(names[1])
     ax.legend()
-
     return X, classes, names, y
 
 
@@ -171,7 +221,7 @@ def _(KNeighborsClassifier, X, kNN, mo, train_test_split, y):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Decision boundary
+    #### Decision boundary
     """)
     return
 
@@ -263,7 +313,6 @@ def _(
     viz_palette,
     y,
 ):
-    # Same k, same data, same metric - the only difference is whose code drew it.
     _k = 5
     _pal = viz_palette()
 
@@ -288,6 +337,54 @@ def _(
     )
     _fig.tight_layout(rect=[0, 0, 1, 0.94])
     _fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Regression
+    """)
+    return
+
+
+@app.cell
+def _(KNeighborsRegressor, kNN, load_diabetes, mo, np, train_test_split):
+    diabetes = load_diabetes(scaled=False)
+    X_reg, y_reg, names_reg = diabetes.data, diabetes.target, list(diabetes.feature_names)
+
+    Xtr_reg, Xte_reg, ytr_reg, yte_reg = train_test_split(X_reg, y_reg, test_size=0.3, random_state=0)
+
+    knn_r = kNN(mode="regression").fit(Xtr_reg, ytr_reg)
+    sk_knn_r = KNeighborsRegressor().fit(Xtr_reg, ytr_reg)
+
+    def rmse(yhat, y):
+        """Computes RMSE
+        """
+        return np.sqrt(np.mean((yhat - y)**2))
+
+    tr_rmse_mine = rmse(knn_r.predict(Xtr_reg), ytr_reg)
+    te_rmse_mine = rmse(knn_r.predict(Xte_reg), yte_reg)
+
+    tr_rmse_sk = rmse(sk_knn_r.predict(Xtr_reg), ytr_reg)
+    te_rmse_sk = rmse(sk_knn_r.predict(Xte_reg), yte_reg)
+
+
+    mo.md(
+        f"""
+        **from scratch**
+        ----------------
+        Training Accuracy: {tr_rmse_mine:.4f} \n
+        Test Accuracy:     {te_rmse_mine:.4f}
+
+        **sklearn**
+        ----------------
+        Training Accuracy: {tr_rmse_sk:.4f} \n
+        Test Accuracy:     {te_rmse_sk:.4f} \n
+
+        RMSE match between sklearn and from scratch implementation.
+        """
+    )
 
     return
 
