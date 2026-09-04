@@ -15,6 +15,7 @@ My machine learning notes. Updating as I find time to document what I learn.
 - [gradient-boosting.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/gradient-boosting.py) — numpy regression & binary classification gradient boosted trees implementation
 - [k-means-clustering.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/k-means-clustering.py) — numpy k-means clustering implementation with Lloyd's algorithm
 - [naive-bayes-classifier.py](https://molab.marimo.io/github/towenc/ml-notes/blob/main/classical-ml/naive-bayes-classifier.py) — numpy implementation of Naive Bayes Classifier
+- [knn.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/knn.py) — numpy implementation of K-Nearest Neighbours classificaiton & regression
 
 **`deep-learning/`**
 
