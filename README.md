@@ -14,8 +14,9 @@ My machine learning notes. Updating as I find time to document what I learn.
 - [random-forest.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/random-forest.py) — numpy regression & classification random forest implementation
 - [gradient-boosting.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/gradient-boosting.py) — numpy regression & binary classification gradient boosted trees implementation
 - [k-means-clustering.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/k-means-clustering.py) — numpy k-means clustering implementation with Lloyd's algorithm
-- [naive-bayes-classifier.py](https://molab.marimo.io/github/towenc/ml-notes/blob/main/classical-ml/naive-bayes-classifier.py) — numpy implementation of Naive Bayes Classifier
-- [knn.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/knn.py) — numpy implementation of K-Nearest Neighbours classificaiton & regression
+- [naive-bayes-classifier.py](https://molab.marimo.io/github/towenc/ml-notes/blob/main/classical-ml/naive-bayes-classifier.py) — numpy implementation of naive bayes classifier
+- [knn.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/knn.py) — numpy implementation of k-nearest neighbours classificaiton & regression
+- [pca.py](https://molab.marimo.io/github/github.com/towenc/ml-notes/blob/main/classical-ml/pca.py) — numpy implementation of principal component analysis
 
 **`deep-learning/`**
 
