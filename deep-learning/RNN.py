@@ -1,7 +1,7 @@
 import marimo
 
-__generated_with = "0.23.16"
-app = marimo.App(width="medium")
+__generated_with = "0.25.2"
+app = marimo.App(width="full")
 
 
 @app.cell
@@ -42,6 +42,27 @@ def _(mo):
     - $W_{{xh}}$: transforms input $x_t$ to hidden state $h_t$
     - $W_{{hh}}$: transforms hidden state $h_{{t-1}}$ at previous step to next step $h_t$
     - $W_{{hy}}$: transforms hidden state $h_t$ to prediction $\hat{{y}}_t$
+
+    With batch size $n$, $d$ input features, $h$ hidden units and $q$ outputs, the dimensions are:
+
+    | Matrix | Shape | Meaning |
+    |---|---|---|
+    | $X_t$ | $n \times d$ | inputs at time $t$ |
+    | $H_t$, $H_{{t-1}}$ | $n \times h$ | hidden state |
+    | $W_{{xh}}$ | $d \times h$ | input → hidden |
+    | $W_{{hh}}$ | $h \times h$ | hidden → hidden |
+    | $b_h$ | $1 \times h$ | hidden bias (broadcast over the batch) |
+    | $W_{{hy}}$ | $h \times q$ | hidden → output |
+    | $b_y$ | $1 \times q$ | output bias (broadcast over the batch) |
+    | $\hat{{y}}_t$ | $n \times q$ | prediction at time $t$ |
+
+    The forward pass looks like the following:
+
+    Hidden state at time $t$
+    $$\underbrace{{H_t}}_{{n \times h}} = \Phi(\underbrace{{X_t W_{{xh}}}}_{{(n \times d)(d \times h)}} + \underbrace{{H_{{t-1}} W_{{hh}}}}_{{(n \times h)(h \times h)}} + \underbrace{{b_h}}_{{1 \times h}})$$
+
+    Output/prediction at time $t$
+    $$\underbrace{{\hat{{y}}_t}}_{{n \times q}} = \underbrace{{H_{{t}} W_{{hy}}}}_{{(n \times h)(h \times q)}} + \underbrace{{b_{{y}}}}_{{1 \times q}}$$
     """)
     return
 
@@ -49,162 +70,98 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Forward**
-
-    TODO: recurrence for $h_t$ and the output
-
-    **Backward through time**
-
-    TODO: why the gradient reaching $h_k$ is a product of Jacobians, and what makes it vanish / explode
+    # RNN Implementation
     """)
     return
 
 
-@app.cell
-def _():
-    def init_params(d, h, C, seed=42):
-        """
-        Initalizes the RNN weights.
-        Tip: nn.RNN uses U(-1/sqrt(h), 1/sqrt(h)); matching it makes the comparison below easy.
+app._unparsable_cell(
+    """
+    class RNNScratch(nn.Module):
+        \"\"\"A single-layer RNN, implemented from scratch.
 
-        Parameters
-        -----------
-        d: int
-            Number of input features per time step
-        h: int
-            Hidden state size
-        C: int
-            Number of classes
-        seed: int
-            Seed for rng
+        Computes the hidden state at each timestep:
+            H_t = tanh(X_t @ W_xh + H_{t-1} @ W_hh + b_h)
 
-        Returns
-        -----------
-        params: dict
-            "W_xh" (d, h), "W_hh" (h, h), "b_h" (h,), "W_hy" (h, C), "b_y" (C,)
-            Tensors with requires_grad=True so autograd tracks them.
-        """
-        raise NotImplementedError
+        Only returns the hidden states and not the predictions.
 
-    def rnn_forward(X, params):
-        """
-        Forward pass of the RNN, unrolled over time.
+        Args:
+            num_inputs (d): number of input features per timestep 
+            num_hiddens (h): number of hiddne units
+            sigma: standard dev. of random starting weights
+    
+        \"\"\"
+        def __init__(self, num_inputs, num_hiddens, sigma=0.01):
+            super().__init__()
+            self.num_inputs = num_inputs
+            self.num_hiddens = num_hiddens
+            self.sigma = sigma
 
-        Parameters
-        ----------
-        X : tensor, shape (m, T, d)
-            Batch of m sequences, T steps, d features per step.
-        params : dict
-            As returned by init_params.
+            self.W_xh = nn.Parameter(
+                torch.randn(num_inputs, num_hiddens) * sigma
+            )
+            self.W_hh = nn.Parameter(
+                torch.randn(num_hiddens, num_hiddens) * sigma
+            )
+            self.b_h = nn.Parameter(
+                torch.zeros(num_hiddens)
+            )
 
-        Returns
-        -------
-        logits : tensor, shape (m, C)
-            Output computed from the final hidden state h_T.
-        hs : list of tensor, length T
-            Hidden states h_1..h_T, each (m, h). Kept so we can look at
-            the gradient reaching each step.
-        """
-        raise NotImplementedError
+        def forward(self, inputs, state=None):
+            # inputs shape: (num_steps, batch_size, num_inputs)
+            if state is None:
+                batch_size = inputs.shape[1]
+                state = torch.zeros(batch_size, self.num_hiddens, device = inputs.device)
 
-    def train_rnn(X, y, h=32, lr=1e-2, epochs=300, seed=42):
-        """
-        Full-batch training. Gradients come from autograd.
+            outputs = []
+            for X in inputs:
+                state = torch.tanh(X @ self.W_xh + state @ self.W_hh + self.b_h)
+                outputs.append(state)
+            return outputs, state
 
-        Returns
-        -------
-        params : dict
-            Trained weights.
-        history : list of float
-            Cost at each epoch.
-        """
-        raise NotImplementedError
+    class RNNWithOutput(nn.Module):
+        def __init__(self, rnn, num_outputs, sigma=0.01):
+            super().__init__()
+            self.rnn = rnn
+            self.num_outputs = num_outputs
 
-    return
+            self.W_hy = nn.Parameter(
+                torch.randn(rnn.num_hiddens, num_outputs)
+            )
 
+            self.b_y = nn.Parameter(
+                torch.zeros(num_outputs)
+            )
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Comparison with PyTorch
-    """)
-    return
+        def forward(self, inputs, state=None):
+            hiddens, state = self.rnn(inputs, state)
 
+            outputs = []
+            for H in hiddens:
+                y_hat = H @ self.W_hy + self.b_y
+                outputs.append(y_hat)
+                return outputs, state
 
-@app.cell
-def _():
-    # TODO: copy your params into nn.RNN(..., batch_first=True) and check the hidden states match
-    # hint: nn.RNN stores weights as (out, in) and has two biases (bias_ih_l0, bias_hh_l0)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Create Data
-
-    A long-memory task: each sequence is $T$ random $\pm 1$ values, and the label is the sign of the **first** one. The other $T-1$ steps are distractors from the same distribution, so the network has to hold one bit across all $T$ steps and ignore everything after it.
-    """)
-    return
+        def 
+    """,
+    name="_"
+)
 
 
 @app.cell
-def _(torch):
-    def make_sequences(m, T, seed=0):
-        """
-        Returns X (m, T, 1) of random +-1 and y (m,) = (X[:, 0, 0] > 0).
-        """
-        g = torch.Generator().manual_seed(seed)
-        X = torch.randint(0, 2, (m, T, 1), generator=g).float() * 2 - 1
-        y = (X[:, 0, 0] > 0).long()
-        return X, y
+def _(RNNScratch, torch):
+    num_steps = 100
+    batch_size = 2
+    num_inputs = 16
+    num_hiddens = 32
 
-    T = 100
-    X_train, y_train = make_sequences(1000, T, seed=0)
-    X_val, y_val = make_sequences(500, T, seed=1)
-    return
+    model = RNNScratch(num_inputs, num_hiddens)
+    X = torch.ones(num_steps, batch_size, num_inputs)
+    outputs, state = model(X)
 
-
-@app.cell
-def _():
-    # TODO: an LSTM classifier with the same interface as rnn_forward: returns (logits, hs)
-    # hint: nn.LSTM only returns its outputs, so to get dJ/dh_t for every step,
-    # step an nn.LSTMCell manually
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Vanishing Gradients
-    """)
-    return
-
-
-@app.cell
-def _():
-    # TODO: at init, backprop the loss and plot ||dJ/dh_t|| against t for the RNN and the LSTM
-    # hint: h.retain_grad() keeps .grad on non-leaf tensors; a log y-axis helps
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Training: RNN vs LSTM
-    """)
-    return
-
-
-@app.cell
-def _():
-    # TODO: train both on X_train, report accuracy on X_val
-    return
-
-
-@app.cell
-def _():
-    # TODO: plot both loss curves, with chance level ln(2) as a reference line
+    print(len(outputs))     # 100
+    print(outputs[0].shape) # torch.Size([2, 32])
+    print(state.shape)      # torch.Size([2, 32])
     return
 
 
