@@ -4,3 +4,9 @@ __marimo__/
 # Python
 __pycache__/
 *.py[cod]
+
+# Boox drawings land here before being moved into <topic>/public/
+drawings-inbox/
+
+# Windows download metadata
+*:Zone.Identifier
